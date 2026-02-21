@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 export const Juego = () => {
 
@@ -8,6 +8,7 @@ export const Juego = () => {
     var player = "";
     var secondPlayer = "";
     var stars = "";
+    var bombs = "";
 
 
     class MainScene extends Phaser.Scene {
@@ -69,36 +70,86 @@ export const Juego = () => {
             stars.children.iterate(function (child) {
                 child.setBounce(0.3)
             })
-    
-            this.physics.add.overlap(player,stars, collectStar, null, this);
-            
-            function collectStar (player, star){
+
+            this.physics.add.overlap(player, stars, collectStar, null, this);
+
+            bombs = this.physics.add.group()
+            this.physics.add.collider(bombs, platforms)
+            this.physics.add.collider(bombs, player, hitBomb, null, this)
+
+            function collectStar(player, star) {
                 star.disableBody(true, true);
                 player.score += 10;
 
                 if (stars.countActive(true) === 0) {
-                    stars.children.iterate(function (child){
+                    var bomb = bombs.create(Phaser.Math.Between(0, 800), 16, 'bomb');
+                    bomb.setBounce(1);
+                    bomb.setCollideWorldBounds(true);
+                    bomb.setVelocity(Phaser.Math.Between(-400 * level, 400 * level), 20);
+                    stars.children.iterate(function (child) {
                         child.enableBody(true, child.x, 0, true, true);
+
                     })
                 }
             }
 
-            if (playerQuantity == 2) {
-                this.physics.add.overlap(secondPlayer,stars, collectStarPlayer2, null, this);
+            function hitBomb(elemnto, bomb) {
+                if (playerQuantity == 1) {
 
-                function collectStarPlayer2 (player, star){
+                    this.physics.pause();
+                    player.setTint(0xff0000);
+                    player.anims.play('turn')
+
+                    this.time.addEvent({
+                        delay: 1500,
+                        loop: false,
+                        callback: () => {
+                            this.scene.start("endScene")
+                        }
+                    })
+                } else {
+                    if (player.score - 50 <= 0) {
+                        player.score = 0;
+                    } else {
+                        player.score -= 50;
+                    }
+                }
+            }
+
+
+            function hitBombP2(elemnto, bomb) {
+                if (secondPlayer.score - 50 <= 0) {
+                    secondPlayer.score = 0;
+                } else {
+                    secondPlayer.score -= 50;
+                }
+            }
+            if (playerQuantity == 2) {
+
+                this.physics.add.overlap(secondPlayer, stars, collectStarPlayer2, null, this);
+                this.physics.add.collider(bombs, secondPlayer, hitBombP2, null, this)
+
+
+
+                function collectStarPlayer2(player, star) {
                     star.disableBody(true, true);
                     secondPlayer.score += 10;
-    
+
+
+
                     if (stars.countActive(true) === 0) {
-                        stars.children.iterate(function (child){
+                        var bomb = bombs.create(Phaser.Math.Between(0, 800), 16, 'bomb');
+                        bomb.setBounce(1);
+                        bomb.setCollideWorldBounds(true);
+                        bomb.setVelocity(Phaser.Math.Between(-400 * level, 400 * level), 20);
+                        stars.children.iterate(function (child) {
                             child.enableBody(true, child.x, 0, true, true);
                         })
                     }
                 }
             }
 
-            
+
 
 
             this.anims.create({
@@ -110,7 +161,7 @@ export const Juego = () => {
 
             this.anims.create({
                 key: 'turn',
-                frames: [{key: 'dude', frame: 4}],
+                frames: [{ key: 'dude', frame: 4 }],
                 frameRate: 10,
                 repeat: -1,
             });
@@ -122,7 +173,7 @@ export const Juego = () => {
                 repeat: -1,
             });
 
-              this.anims.create({
+            this.anims.create({
                 key: 'leftP2',
                 frames: this.anims.generateFrameNumbers('secondPlayer', { start: 0, end: 3 }),
                 frameRate: 10,
@@ -131,7 +182,7 @@ export const Juego = () => {
 
             this.anims.create({
                 key: 'turnP2',
-                frames: [{key: 'secondPlayer', frame: 4}],
+                frames: [{ key: 'secondPlayer', frame: 4 }],
                 frameRate: 10,
                 repeat: -1,
             });
